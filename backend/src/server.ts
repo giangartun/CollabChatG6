@@ -3,19 +3,64 @@ import http from 'http';
 import { WebSocketServer } from 'ws';
 import dotenv from 'dotenv';
 import { PrismaClient } from "@prisma/client";
+import { OAuth2Client } from "google-auth-library"; // 👈 para validar token de Google
+import jwt from "jsonwebtoken";                     // 👈 para emitir tu JWT interno
+
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 const prisma = new PrismaClient();
-
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 app.use(express.json());
 
 // Endpoint de prueba
 app.get("/", (_req, res) => {
   res.json({ ok: true, message: "API funcionando" });
+});
+
+// 🔑 Login con Google → emitir JWT interno
+app.post("/auth/google", async (req, res) => {
+  try {
+    const { credential } = req.body; // el ID token que manda el frontend
+
+    // Validar el token con Google
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload) {
+      return res.status(400).json({ error: "Token inválido" });
+    }
+
+    // Buscar o crear usuario en la BD
+    let user = await prisma.user.findUnique({ where: { email: payload.email! } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          name: payload.name ?? "Sin nombre",
+          email: payload.email!,
+          provider: "google",
+          providerId: payload.sub,
+        },
+      });
+    }
+
+    // Emitir JWT interno
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET!,
+      { expiresIn: "1h" }
+    );
+
+    res.json({ token, user });
+  } catch (error: any) {
+    res.status(500).json({ error: error?.message ?? "Error en login con Google" });
+  }
 });
 
 // Crear usuario
@@ -94,7 +139,6 @@ wss.on('connection', (ws) => {
     console.log('Cliente desconectado');
   });
 });
-
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
