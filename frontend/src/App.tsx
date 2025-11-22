@@ -1,33 +1,41 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import MessageForm from "./components/MessageForm";
 import MessageList from "./components/MessageList";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const App: React.FC = () => {
   // Estado para guardar los mensajes recibidos
   const [messages, setMessages] = useState<string[]>([]);
+  const socketRef = useRef<WebSocket | null>(null);
 
-  // Conexión al WebSocket del backend
-  const socket = new WebSocket("ws://localhost:3000");
-
-  // Configurar recepción de mensajes
+  // Inicializar el WebSocket una sola vez
   useEffect(() => {
-    socket.onmessage = (event) => {
+    socketRef.current = new WebSocket("ws://localhost:3000");
+
+    socketRef.current.onmessage = (event) => {
       setMessages((prev) => [...prev, event.data]);
+    };
+
+    // Cerrar el socket cuando el componente se desmonte
+    return () => {
+      socketRef.current?.close();
     };
   }, []);
 
   // Función para enviar mensajes
   const sendMessage = (msg: string) => {
-    socket.send(msg);
+    socketRef.current?.send(msg);
   };
 
   // Renderizar la interfaz
   return (
-    <div>
-      <h1>Chat en tiempo real</h1>
-      <MessageList messages={messages} />
-      <MessageForm onSend={sendMessage} />
-    </div>
+    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID!}>
+      <div>
+        <h1>Chat en tiempo real</h1>
+        <MessageList messages={messages} />
+        <MessageForm onSend={sendMessage} />
+      </div>
+    </GoogleOAuthProvider>
   );
 };
 
