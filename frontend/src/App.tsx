@@ -1,48 +1,47 @@
 import React, { useEffect, useState, useRef } from "react";
 import MessageForm from "./components/MessageForm";
 import MessageList from "./components/MessageList";
-import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+// import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google"; // 👈 comentado para demo
 
 const App: React.FC = () => {
   // Estado para guardar los mensajes recibidos
   const [messages, setMessages] = useState<string[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
 
-  // Estado para guardar el JWT interno que devuelve tu backend
+  // Estado para guardar el JWT interno que devuelve tu backend (no usado en demo)
   const [token, setToken] = useState<string | null>(null);
 
   // Inicializar el WebSocket una sola vez
-const hasConnectedRef = useRef(false);
+  const hasConnectedRef = useRef(false);
 
-useEffect(() => {
-  if (hasConnectedRef.current) return;
+  useEffect(() => {
+    if (hasConnectedRef.current) return;
 
-  socketRef.current = new WebSocket("ws://localhost:3000");
-  hasConnectedRef.current = true;
+    socketRef.current = new WebSocket("ws://localhost:3000");
+    hasConnectedRef.current = true;
 
-  socketRef.current.onopen = () => {
-    console.log("✅ WebSocket conectado");
-  };
+    socketRef.current.onopen = () => {
+      console.log("✅ WebSocket conectado");
+    };
 
-  socketRef.current.onclose = () => {
-    console.log("⚠️ WebSocket cerrado");
-  };
+    socketRef.current.onclose = () => {
+      console.log("⚠️ WebSocket cerrado");
+    };
 
-  socketRef.current.onerror = (err) => {
-    console.error("❌ Error en WebSocket:", err);
-  };
+    socketRef.current.onerror = (err) => {
+      console.error("❌ Error en WebSocket:", err);
+    };
 
-  socketRef.current.onmessage = (event) => {
-    setMessages((prev) => [...prev, event.data]);
-  };
+    socketRef.current.onmessage = (event) => {
+      setMessages((prev) => [...prev, event.data]);
+    };
 
-  return () => {
-    socketRef.current?.close();
-    socketRef.current = null;
-    hasConnectedRef.current = false;
-  };
-}, []);
-
+    return () => {
+      socketRef.current?.close();
+      socketRef.current = null;
+      hasConnectedRef.current = false;
+    };
+  }, []);
 
   // Función para enviar mensajes
   const sendMessage = (msg: string) => {
@@ -53,7 +52,8 @@ useEffect(() => {
     }
   };
 
-  // Manejar login con Google
+  // Manejar login con Google (no usado en demo)
+  /*
   const handleLoginSuccess = async (credentialResponse: any) => {
     console.log("Respuesta de Google:", credentialResponse);
 
@@ -78,30 +78,29 @@ useEffect(() => {
       console.error("Error en login:", err);
     }
   };
+  */
 
   // Renderizar la interfaz
   return (
-    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID!}>
-      <div>
-        <h1>Chat en tiempo real</h1>
+    <div>
+      <h1>Chat en tiempo real</h1>
 
-        {/* Botón de login con Google */}
+      {/* Mostrar chat siempre en demo */}
+      <MessageList messages={messages} />
+      <MessageForm onSend={sendMessage} />
+
+      {/* Login con Google (comentado en demo) */}
+      {/*
+      <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID!}>
         {!token && (
           <GoogleLogin
             onSuccess={handleLoginSuccess}
             onError={() => console.log("Error en login con Google")}
           />
         )}
-
-        {/* Mostrar chat solo si ya hay token */}
-        {token && (
-          <>
-            <MessageList messages={messages} />
-            <MessageForm onSend={sendMessage} />
-          </>
-        )}
-      </div>
-    </GoogleOAuthProvider>
+      </GoogleOAuthProvider>
+      */}
+    </div>
   );
 };
 
