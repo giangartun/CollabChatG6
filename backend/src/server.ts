@@ -6,6 +6,7 @@ import { PrismaClient } from "@prisma/client";
 import { OAuth2Client } from "google-auth-library"; // 👈 para validar token de Google
 import jwt from "jsonwebtoken";                     // 👈 para emitir tu JWT interno
 import cors from "cors";
+
 dotenv.config();
 
 const app = express();
@@ -31,7 +32,6 @@ app.post("/auth/google", async (req, res) => {
   try {
     const { credential } = req.body; // el ID token que manda el frontend
 
-    // Validar el token con Google
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
       audience: process.env.GOOGLE_CLIENT_ID,
@@ -42,7 +42,6 @@ app.post("/auth/google", async (req, res) => {
       return res.status(400).json({ error: "Token inválido" });
     }
 
-    // Buscar o crear usuario en la BD
     let user = await prisma.user.findUnique({ where: { email: payload.email! } });
     if (!user) {
       user = await prisma.user.create({
@@ -55,7 +54,6 @@ app.post("/auth/google", async (req, res) => {
       });
     }
 
-    // Emitir JWT interno
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET!,
@@ -125,12 +123,17 @@ app.get("/messages", async (_req, res) => {
   res.json(messages);
 });
 
-// WebSocket
+// WebSocket con logs mejorados
+let clientId = 0;
+
 wss.on('connection', (ws) => {
-  console.log('Cliente conectado');
+  const id = ++clientId;
+  const time = () => new Date().toLocaleTimeString();
+
+  console.log(`[${time()}] Cliente ${id} conectado`);
 
   ws.on('message', (message) => {
-    console.log('Mensaje recibido:', message.toString());
+    console.log(`[${time()}] Cliente ${id} envió: ${message.toString()}`);
 
     // Reenviar el mensaje a todos los clientes conectados
     wss.clients.forEach((client) => {
@@ -141,7 +144,7 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
-    console.log('Cliente desconectado');
+    console.log(`[${time()}] Cliente ${id} desconectado`);
   });
 });
 
