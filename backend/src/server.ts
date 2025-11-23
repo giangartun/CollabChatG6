@@ -14,12 +14,13 @@ const wss = new WebSocketServer({ server });
 const prisma = new PrismaClient();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-app.use(express.json());
-
 app.use(cors({
   origin: "http://localhost:3001", // tu frontend
   credentials: true
 }));
+
+app.use(express.json());
+
 // Endpoint de prueba
 app.get("/", (_req, res) => {
   res.json({ ok: true, message: "API funcionando" });
