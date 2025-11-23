@@ -1,17 +1,30 @@
 import React, { useEffect, useState, useRef } from "react";
 import MessageForm from "./components/MessageForm";
 import MessageList from "./components/MessageList";
-// import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google"; // 👈 comentado para demo
+
+const DUMMY_CONTACTS = [
+  { name: "Otacon", status: "Online" },
+  { name: "Meryl Silverburgh", status: "Away" },
+  { name: "Revolver Ocelot", status: "Offline" },
+  { name: "Gray Fox", status: "Busy" },
+  { name: "Big Boss", status: "Online" },
+  { name: "The Boss", status: "Online" },
+];
+
+const ContactItem = ({ name, status }: { name: string; status: string }) => (
+  <div className="flex items-center p-3 my-2 rounded-xl bg-neutral-600 border border-neutral-700 hover:bg-neutral-700 transition-colors cursor-pointer">
+    <div className="w-6 h-6 rounded-full bg-white flex-shrink-0 mr-3 border-2 border-green-500"></div>
+    <div className="flex-grow">
+      <div className="h-2 bg-gray-300 rounded mb-1 w-3/4"></div>
+      <div className="h-2 bg-gray-400 rounded w-1/2"></div>
+    </div>
+    <div className="w-4 h-4 rounded-full bg-white flex-shrink-0 ml-3"></div>
+  </div>
+);
 
 const App: React.FC = () => {
-  // Estado para guardar los mensajes recibidos
   const [messages, setMessages] = useState<string[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
-
-  // Estado para guardar el JWT interno que devuelve tu backend (no usado en demo)
-  const [token, setToken] = useState<string | null>(null);
-
-  // Inicializar el WebSocket una sola vez
   const hasConnectedRef = useRef(false);
 
   useEffect(() => {
@@ -43,7 +56,6 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Función para enviar mensajes
   const sendMessage = (msg: string) => {
     if (socketRef.current?.readyState === WebSocket.OPEN) {
       socketRef.current.send(msg);
@@ -52,55 +64,44 @@ const App: React.FC = () => {
     }
   };
 
-  // Manejar login con Google (no usado en demo)
-  /*
-  const handleLoginSuccess = async (credentialResponse: any) => {
-    console.log("Respuesta de Google:", credentialResponse);
-
-    try {
-      const res = await fetch("http://localhost:3000/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credential: credentialResponse.credential }),
-      });
-
-      const data = await res.json();
-      console.log("Respuesta del backend:", data);
-
-      if (data.token) {
-        setToken(data.token); // guardamos el JWT interno
-        console.log("Usuario autenticado:", data.user);
-        console.log("Token interno:", data.token);
-      } else {
-        console.error("El backend no devolvió un token válido");
-      }
-    } catch (err) {
-      console.error("Error en login:", err);
-    }
-  };
-  */
-
-  // Renderizar la interfaz
   return (
-    <div>
-      <h1>Chat en tiempo real</h1>
+    <main className="flex min-h-screen bg-gradient-to-b from-black to-[#4A4A4A] p-4 text-white">
+      {/* Barra lateral de contactos */}
+      <div className="w-1/4 min-w-[280px] mr-4 p-4 rounded-xl bg-neutral-700 flex flex-col border border-neutral-600">
+        <div className="bg-gray-400 p-4 rounded-xl mb-4 text-black border-4 border-gray-600">
+          <div className="flex justify-between items-center font-extrabold text-lg">
+            <span>USUARIO</span>
+            <div className="w-5 h-5 rounded-full bg-white"></div>
+          </div>
+        </div>
 
-      {/* Mostrar chat siempre en demo */}
-      <MessageList messages={messages} />
-      <MessageForm onSend={sendMessage} />
+        <h2 className="text-xl font-bold mb-3 uppercase text-white">CONTACTOS</h2>
 
-      {/* Login con Google (comentado en demo) */}
-      {/*
-      <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID!}>
-        {!token && (
-          <GoogleLogin
-            onSuccess={handleLoginSuccess}
-            onError={() => console.log("Error en login con Google")}
-          />
-        )}
-      </GoogleOAuthProvider>
-      */}
-    </div>
+        <div className="flex-grow overflow-y-auto pr-2">
+          {DUMMY_CONTACTS.map((contact, index) => (
+            <ContactItem key={index} name={contact.name} status={contact.status} />
+          ))}
+        </div>
+      </div>
+
+      {/* Área de chat principal */}
+      <div className="flex-grow flex flex-col bg-neutral-800 rounded-xl border border-neutral-600">
+        <div className="p-4 border-b border-neutral-600 bg-neutral-700 rounded-t-xl flex justify-between items-center">
+          <div className="h-4 bg-gray-300 rounded w-1/3"></div>
+          <div className="w-4 h-4 rounded-full bg-white"></div>
+        </div>
+
+        {/* Mensajes */}
+        <div className="flex-grow bg-black p-4 overflow-y-auto">
+          <MessageList messages={messages} />
+        </div>
+
+        {/* Formulario de envío */}
+        <div className="p-3 border-t border-neutral-600 bg-neutral-700 rounded-b-xl">
+          <MessageForm onSend={sendMessage} />
+        </div>
+      </div>
+    </main>
   );
 };
 
