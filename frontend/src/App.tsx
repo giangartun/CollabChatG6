@@ -12,33 +12,37 @@ const App: React.FC = () => {
   const [token, setToken] = useState<string | null>(null);
 
   // Inicializar el WebSocket una sola vez
-  useEffect(() => {
-    if (socketRef.current) return; // evita reconexiones múltiples
+const hasConnectedRef = useRef(false);
 
-    socketRef.current = new WebSocket("ws://localhost:3000");
+useEffect(() => {
+  if (hasConnectedRef.current) return;
 
-    socketRef.current.onopen = () => {
-      console.log("✅ WebSocket conectado");
-    };
+  socketRef.current = new WebSocket("ws://localhost:3000");
+  hasConnectedRef.current = true;
 
-    socketRef.current.onclose = () => {
-      console.log("⚠️ WebSocket cerrado");
-    };
+  socketRef.current.onopen = () => {
+    console.log("✅ WebSocket conectado");
+  };
 
-    socketRef.current.onerror = (err) => {
-      console.error("❌ Error en WebSocket:", err);
-    };
+  socketRef.current.onclose = () => {
+    console.log("⚠️ WebSocket cerrado");
+  };
 
-    socketRef.current.onmessage = (event) => {
-      setMessages((prev) => [...prev, event.data]);
-    };
+  socketRef.current.onerror = (err) => {
+    console.error("❌ Error en WebSocket:", err);
+  };
 
-    // Cerrar el socket cuando el componente se desmonte
-    return () => {
-      socketRef.current?.close();
-      socketRef.current = null;
-    };
-  }, []);
+  socketRef.current.onmessage = (event) => {
+    setMessages((prev) => [...prev, event.data]);
+  };
+
+  return () => {
+    socketRef.current?.close();
+    socketRef.current = null;
+    hasConnectedRef.current = false;
+  };
+}, []);
+
 
   // Función para enviar mensajes
   const sendMessage = (msg: string) => {
