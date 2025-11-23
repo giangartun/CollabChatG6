@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import { PrismaClient } from "@prisma/client";
 import { OAuth2Client } from "google-auth-library"; // 👈 para validar token de Google
 import jwt from "jsonwebtoken";                     // 👈 para emitir tu JWT interno
-
+import cors from "cors";
 dotenv.config();
 
 const app = express();
@@ -16,6 +16,10 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 app.use(express.json());
 
+app.use(cors({
+  origin: "http://localhost:3001", // tu frontend
+  credentials: true
+}));
 // Endpoint de prueba
 app.get("/", (_req, res) => {
   res.json({ ok: true, message: "API funcionando" });
